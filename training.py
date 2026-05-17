@@ -302,6 +302,31 @@ def _select_greedy_final_action_set(
     return selected_actions
 
 
+def _select_q_only_final_action_set(
+    Q_table: Dict,
+    state: State,
+    available_actions: List[Action],
+    parsed: ParsedData,
+) -> List[Action]:
+    """Select a non-conflicting action set using only learned Q values."""
+    selected_actions: List[Action] = []
+    candidate_actions = available_actions.copy()
+
+    while candidate_actions:
+        selected_action = max(
+            candidate_actions,
+            key=lambda action: (Q_table.get(state, {}).get(action, 0.0), action),
+        )
+        selected_actions.append(selected_action)
+        candidate_actions = [
+            action
+            for action in candidate_actions
+            if not is_action_conflict(action, selected_action, parsed)
+        ]
+
+    return selected_actions
+
+
 def _select_beam_final_action_set(
     Q_table: Dict,
     state: State,
@@ -376,7 +401,16 @@ def _select_final_action_set(
     beam_width: int = 3,
     beam_branch_limit: int | None = 8,
     beam_improvement_margin: float = 0.1,
+    use_cost_to_go_fallback: bool = True,
 ) -> List[Action]:
+    if not use_cost_to_go_fallback:
+        return _select_q_only_final_action_set(
+            Q_table,
+            state,
+            available_actions,
+            parsed,
+        )
+
     greedy_actions = _select_greedy_final_action_set(
         Q_table,
         state,
@@ -447,6 +481,8 @@ def sample_training_loop(
     alpha: float = 0.1,
     gamma: float = 0.9,
     epsilon: float = 0.2,
+    epsilon_decay: float = 1.0,
+    epsilon_min: float = 0.0,
     convergence_threshold: float = 1e-4,
     max_skill_level: int = 4,
     global_reward_scale: float = 0.3,
@@ -458,17 +494,27 @@ def sample_training_loop(
     verbose: bool = True,
     log_interval: int = 10,
     return_metrics: bool = False,
+    training_mode: str = "rql",
+    return_history: bool = False,
+    history_decode_interval: int = 1,
 ) -> Dict:
     """Run rollout-based Q-learning and return the trained Q table."""
+    mode = training_mode.lower()
+    if mode not in {"rql", "ql"}:
+        raise ValueError("training_mode must be 'rql' or 'ql'.")
+    use_rollout_lookahead = mode == "rql"
+
     if verbose:
         print(f"Planned rollouts: {max_rollouts}")
     prev_q = _copy_q_table(Q_table)
     converged = False
     completed_rollouts = 0
     last_max_diff = float("inf")
+    history: List[Dict] = []
 
     for rollout_i in range(1, max_rollouts + 1):
         alpha_eff = alpha * (0.995 ** (rollout_i - 1))
+        epsilon_eff = max(epsilon_min, epsilon * (epsilon_decay ** (rollout_i - 1)))
 
         if rollout_i > 1:
             last_max_diff = _max_q_diff(Q_table, prev_q)
@@ -485,6 +531,7 @@ def sample_training_loop(
 
         env = init_environment(parsed)
         trajectory: List[TrajectoryItem] = []
+        episode_reward = 0.0
         max_steps = 10000
         step = 0
 
@@ -496,6 +543,7 @@ def sample_training_loop(
 
             if len(env.completed_tasks) == parsed.task_count:
                 global_reward = calculate_global_reward(env, parsed)
+                episode_reward = global_reward
                 _update_q_from_trajectory(
                     Q_table,
                     trajectory,
@@ -521,10 +569,13 @@ def sample_training_loop(
                 state_features,
                 available_actions,
                 parsed,
-                epsilon,
+                epsilon_eff,
             )
             executable_actions = add_required_interrupts(selected_actions, env)
-            lookahead_gain = calculate_lookahead_gain(executable_actions, parsed, env)
+            if use_rollout_lookahead:
+                lookahead_gain = calculate_lookahead_gain(executable_actions, parsed, env)
+            else:
+                lookahead_gain = 0.0
 
             _executed_actions, immediate_feedback = _execute_action_set(
                 selected_actions,
@@ -551,9 +602,35 @@ def sample_training_loop(
                     trajectory.append((state_features, action, local_reward, next_state_features))
 
         completed_rollouts = rollout_i
+        episode_max_q_diff = _max_q_diff(Q_table, prev_q)
+        last_max_diff = episode_max_q_diff
+
+        if return_history and history_decode_interval > 0 and rollout_i % history_decode_interval == 0:
+            _, decoded_penalty = build_final_solution(
+                Q_table,
+                parsed,
+                max_skill_level,
+                beam_width=3 if use_rollout_lookahead else 1,
+                use_cost_to_go_fallback=use_rollout_lookahead,
+            )
+            history.append(
+                {
+                    "episode": rollout_i,
+                    "episode_reward": episode_reward,
+                    "decoded_penalty": decoded_penalty,
+                    "max_q_diff": episode_max_q_diff,
+                }
+            )
+
         if verbose and log_interval > 0 and rollout_i % log_interval == 0:
             print(f"Completed rollout {rollout_i}/{max_rollouts}")
-            _, penalty = build_final_solution(Q_table, parsed, max_skill_level)
+            _, penalty = build_final_solution(
+                Q_table,
+                parsed,
+                max_skill_level,
+                beam_width=3 if use_rollout_lookahead else 1,
+                use_cost_to_go_fallback=use_rollout_lookahead,
+            )
             print(f"  Current decoded penalty: {penalty:.2f}")
 
     if verbose:
@@ -562,11 +639,14 @@ def sample_training_loop(
         else:
             print(f"Training stopped after reaching max_rollouts={max_rollouts}.")
     if return_metrics:
-        return Q_table, {
+        metrics = {
             "converged": converged,
             "rollouts": completed_rollouts,
             "max_q_diff": last_max_diff,
         }
+        if return_history:
+            metrics["history"] = history
+        return Q_table, metrics
     return Q_table
 
 
@@ -578,6 +658,7 @@ def build_final_solution(
     beam_width: int = 3,
     beam_branch_limit: int | None = 8,
     beam_improvement_margin: float = 0.1,
+    use_cost_to_go_fallback: bool = True,
 ) -> Tuple[List[Dict], float]:
     """Build the final schedule greedily from the trained Q table."""
     env = init_environment(parsed)
@@ -615,6 +696,7 @@ def build_final_solution(
             beam_width,
             beam_branch_limit,
             beam_improvement_margin,
+            use_cost_to_go_fallback,
         )
         executable_actions, _immediate_feedback = _execute_action_set(
             selected_actions,

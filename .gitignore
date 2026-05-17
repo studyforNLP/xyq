@@ -6,7 +6,9 @@ __pycache__/
 .idea/
 
 *.csv
+*.xlsx
 *.log
+results/
 
 111.md
 222.md

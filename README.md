@@ -1,361 +1,277 @@
-# 多技能项目调度：Rollout + Q-learning
+# 面向多里程碑多技能可中断项目调度的 Rollout-Q-learning
 
-本项目面向一个带有多技能资源约束的项目调度问题，支持以下场景：
+本项目实现了一个面向多里程碑、多技能人员、任务可中断项目调度问题的实验代码框架。核心方法为 Rollout-Q-learning，简称 RQL，即通过 Q-learning 学习动作偏好，并用 rollout cost-to-go 前瞻评价辅助训练和最终构解。
 
-- 任务前后约束
-- 不同人员执行同一任务耗时不同
-- 任务中断与恢复
-- 0 时长虚拟任务
-- 里程碑截止时间与延迟惩罚
+代码当前主要服务于论文实验，包括正式对比实验、RQL 参数正交实验、RQL 收敛性实验、cost-to-go 耗时诊断，以及多 Sheet Excel 结果输出。
 
-当前实现采用 `Rollout + Q-learning` 进行训练，并在最终构造解时结合 `cost-to-go` 启发式进行补充决策。
+## 问题描述
 
----
+项目由带紧前紧后约束的任务网络构成。每个任务可由具备相应技能的服务人员执行，不同人员执行同一任务的处理时间可以不同。若人员不具备任务所需技能，则不能执行该任务。
 
-## 最新版改动重点
+任务允许被中断。任务中断后会记录原执行人员和剩余处理时间，后续必须由原执行人员从原进度恢复执行。任一服务人员在同一时刻最多执行一项任务，一个任务同一时刻只由一个人员执行。
 
-这次版本不是简单调参，而是修复了几处会直接影响 Q 表收敛和结果质量的实现问题。
+项目中设置多个里程碑事件，每个里程碑具有计划完成时间和惩罚权重。若里程碑实际完成时间晚于计划完成时间，则产生加权延迟惩罚。算法目标是最小化总延迟惩罚。
 
-### 1. Q 表从“按动作类型存值”改成“按完整动作存值”
-
-旧版本的问题：
-
-- Q 值只区分 `assign`、`resume`、`continue`
-- 不同任务、不同人员的动作被混在一起
-- 算法无法学到“把哪个任务分配给谁更好”
-
-新版本改为：
-
-```python
-(action_type, task_id, person_id)
-```
-
-Q 表结构现在是：
-
-```python
-state -> {action_tuple: q_value}
-```
-
-这意味着算法终于能区分：
-
-- 给任务 3 分配人员 1
-- 给任务 3 分配人员 2
-- 给任务 5 分配人员 1
-
-这些动作的价值不再被压缩成同一个 `assign` 值。
-
-这是这次修复里最关键的一项。
-
-### 2. 训练阶段不再对同一条轨迹重复更新 Q 值
-
-旧版本的问题：
-
-- rollout 过程中会做即时 Q 更新
-- episode 结束后又会按全局奖励再更新一次
-
-这会造成同一条轨迹被重复学习，而且两次学习目标并不完全一致，容易导致：
-
-- Q 值抖动
-- 收敛很慢
-- 看起来“在学”，但策略质量并不好
-
-新版本改为：
-
-- rollout 过程中只记录轨迹
-- 任务全部完成后统一更新 Q 表
-
-这样训练信号更一致，收敛更稳定。
-
-### 3. `cost_to_go` 现在严格评估“当前动作本身”
-
-旧版本的问题：
-
-- 当评估 `assign(task, person)` 时，启发式可能会偷偷切换成“该任务最快的人”
-- 结果是评估时看的动作和实际执行的动作不是同一个动作
-
-这会导致启发式严重误导动作选择。
-
-新版本改为：
-
-- `cost_to_go` 严格使用传入动作中的 `person_id`
-- 评估动作和执行动作完全一致
-
-这样启发式才真正有意义。
-
-### 4. 修正了里程碑紧迫度 `MUR` 的计算方式
-
-旧版本的问题：
-
-- `MUR` 不能正确反映“当前最紧迫的未完成里程碑”
-- 状态特征会低估真实的工期压力
-
-新版本改为：
-
-- 对每个未完成里程碑计算当前紧迫度
-- 取其中最大的紧迫度作为当前 `MUR`
-
-这样状态特征更贴近真实调度压力。
-
-### 5. 统一了训练阶段和最终构解阶段的时间推进逻辑
-
-旧版本的问题：
-
-- 训练时的时间推进顺序
-- 最终 `build_final_solution` 的时间推进顺序
-
-两者不完全一致。
-
-这会导致训练学到的策略，到最终构造解时表现不一致。
-
-新版本统一为同一套流程：
-
-1. 先执行当前时刻可立即完成的 0 时长任务
-2. 执行选中的动作
-3. 推进正在运行任务的剩余时间
-4. 再处理本时刻新解锁的 0 时长任务
-5. 最后时间加 1
-
-这样训练和最终执行更加一致。
-
----
-
-## 问题定义
-
-本项目处理的调度问题具有以下特点：
-
-- 任务之间存在前序约束，形成 DAG
-- 一个任务可由多名人员执行
-- 不同人员执行同一任务的耗时不同
-- 每个人同一时刻最多执行一个任务
-- 任务允许中断与恢复
-- 某些任务是 0 时长虚拟任务
-- 某些任务是带截止时间的里程碑事件
-
-全局目标是最小化加权延迟惩罚。
-
-惩罚定义为：
+目标函数口径为：
 
 ```text
-惩罚 = 惩罚系数 × max(0, 实际完成时间 - 截止时间)
+penalty = sum(weight_m * max(0, actual_finish_m - due_time_m))
 ```
 
----
+## 当前算法
 
-## 状态、动作与奖励
+当前主算法为 `RQL = Q-learning policy + rollout cost-to-go assisted decoding`。
 
-### 状态特征
+主要特点：
 
-当前实现使用三维离散状态：
+- 使用 6 维离散状态表示：`NLF, SBI, MUR, RUR, CRT, ITN`。
+- 使用完整动作三元组：`(action_type, task_id, person_id)`。
+- 显式动作包括：`assign`、`resume`、`continue`。
+- `interrupt` 不是独立学习动作，而是在人员冲突时自动插入。
+- 训练阶段将局部奖励、全局惩罚和 cost-to-go 前瞻收益结合。
+- 最终构解阶段使用 Q 值、cost-to-go fallback 和 beam search 共同选择动作集。
+- 正式 RQL 默认采用 scale-specific 收敛策略：J10 使用 checkpoint，J20/J30 及更大规模使用 combined profile。
 
-- `NLF`：网络层级特征
-- `SBI`：技能瓶颈指数
-- `MUR`：里程碑紧迫度
+## 对比方法
 
-状态写作：
+正式实验支持以下方法：
+
+| 方法 | 含义 |
+|---|---|
+| `MPV-SLK-EFT` | 里程碑优先、松弛时间、最早完成时间组合规则 |
+| `MXS+MF` | 后继任务数最多优先，再选预计完成时间最早人员 |
+| `SLK-EFT` | 松弛时间优先，再选预计完成时间最早人员 |
+| `SPT` | 最短处理时间规则 |
+| `ECT` | 最早完成时间规则 |
+| `FIFO` | 先到先服务规则 |
+| `QL` | 不使用 rollout cost-to-go 的普通 Q-learning |
+| `RH` | 纯启发式 rollout，不训练 Q 表 |
+| `RQL` | Q-learning + rollout cost-to-go 前瞻评价 |
+
+## 数据目录
+
+正式案例位于 `cases/`：
 
 ```text
-(NLF, SBI, MUR)
+cases/
+  j10.mm/
+  j20.mm/
+  j30.mm/
+  j60.mm/
+  j90.mm/
+  j120.mm/
 ```
 
-### 动作空间
+规模含义：
 
-显式动作类型为：
+- `J10` 表示 10 个真实任务。
+- 文件总节点数为 `J + 2`，包含虚拟起点和虚拟终点。
+- 实验脚本会校验 `task_count == J + 2`。
 
-- `assign`
-- `resume`
-- `continue`
+## 环境要求
 
-说明：
+当前代码使用 Python 标准库和 `numpy`。Excel 输出由 `excel_writer.py` 使用 `zipfile + XML` 生成，不依赖 `pandas`、`openpyxl` 或 `xlsxwriter`。
 
-- `interrupt` 不作为独立决策动作
-- 如果执行 `assign` 或 `resume` 前需要腾出人员，会自动插入 `interrupt`
+推荐使用当前机器上的 Python：
 
-完整动作形式为：
-
-```text
-(action_type, task_id, person_id)
+```powershell
+E:\conda\python.exe
 ```
 
-### 奖励设计
+## 快速运行
 
-局部即时奖励由 `execute_action` 返回，例如：
-
-- 成功 `assign`：正奖励
-- 0 时长任务立即完成：较大正奖励
-- `interrupt`：负奖励
-- `resume`：小正奖励
-- `continue`：小正奖励
-
-全局奖励由总延迟惩罚决定：
-
-```text
-global_reward = - total_penalty
-```
-
-Q 更新时实际使用的奖励为：
-
-```text
-reward_for_update =
-    local_reward_scale * local_reward
-    + global_reward_scale * global_reward
-```
-
----
-
-## 训练流程
-
-### 1. 解析输入数据
-
-解析器读取：
-
-- 任务数量
-- 邻接矩阵
-- 人员数量
-- 任务-人员-时间映射
-- 里程碑事件
-- 里程碑时间
-
-并进一步计算：
-
-- 紧前任务
-- 紧后任务
-- 优先值
-- 平均时长
-- 最早开始时间
-- 最晚开始时间
-- 总时差
-
-### 2. 初始化环境与 Q 表
-
-根据人员数量生成离散状态空间，并初始化稀疏 Q 表。
-
-### 3. 执行 Rollout
-
-每个 rollout 中会：
-
-- 初始化环境
-- 选择动作
-- 推进时间
-- 记录 `(s, a, r, s')` 轨迹
-
-### 4. 在 episode 结束后统一更新 Q 表
-
-当所有任务完成后：
-
-- 计算全局奖励
-- 与局部奖励进行组合
-- 使用整条轨迹统一更新一次 Q 表
-
-### 5. 收敛判定
-
-通过比较相邻两轮 rollout 的 Q 表最大绝对差值来判断是否收敛。
-
----
-
-## 最终方案构建
-
-训练结束后，`build_final_solution` 会以贪心方式构造最终调度方案。
-
-决策规则如下：
-
-- 优先选择当前状态下 Q 值最高的动作
-- 如果当前状态下 Q 值都为 0 或尚未拉开差距，则回退到 `cost_to_go`
-- 选择 `cost_to_go` 最小的动作作为当前决策
-
----
-
-## 当前版本的验证结果
-
-在默认测试文件 `test.mm` 上，当前最新版代码已经能够：
-
-- 正常训练
-- 达到收敛阈值
-- 输出稳定的最终调度方案
-
-一次实际验证结果显示：
-
-- 大约在第 `734` 次 rollout 达到收敛阈值
-- 最终总延迟惩罚约为 `0.30`
-
-这说明代码已经从“Q 表难以收敛”提升到“Q 表可以收敛并输出可用方案”。
-
----
-
-## 项目结构
-
-| 文件 | 作用 |
-|------|------|
-| `main.py` | 主入口，负责解析、训练、构解与输出 |
-| `config.py` | 数据文件路径与解析标记配置 |
-| `parser.py` | 输入文件解析与派生指标计算 |
-| `data_models.py` | 核心数据结构定义 |
-| `state_space.py` | 状态空间生成与动作类型定义 |
-| `environment.py` | 环境初始化与状态特征计算 |
-| `actions.py` | 可行动作生成、冲突判断、自动插入中断 |
-| `reward.py` | 动作执行与奖励计算 |
-| `qlearning.py` | Q 表初始化、epsilon-greedy 选择、Q 更新 |
-| `training.py` | rollout 训练循环与最终方案构建 |
-| `cost_to_go.py` | 启发式模拟与代价评估 |
-| `output.py` | 结果格式化输出 |
-
----
-
-## 运行方式
-
-如果你的 Python 位于 `E:\conda`，可以直接运行：
+单案例快速运行：
 
 ```powershell
 E:\conda\python.exe main.py
 ```
 
-或者：
+`main.py` 使用 `config.py` 中的 `DEFAULT_TARGET_FILE` 作为输入文件，适合快速检查解析、训练和最终构解流程。
+
+## 正式对比实验
+
+正式多规模实验入口为 `experiment_suite.py`。
+
+小规模 smoke test：
 
 ```powershell
-E:\conda\python.exe script0107.py
+E:\conda\python.exe experiment_suite.py --cases-dir cases --scales 10 --max-cases-per-scale 1 --seeds 1 --output-xlsx results/smoke.xlsx
 ```
 
-输入文件路径由 `config.py` 中的 `DEFAULT_TARGET_FILE` 控制。
+J10/J20/J30 正式实验示例：
 
----
+```powershell
+E:\conda\python.exe experiment_suite.py --cases-dir cases --scales 10,20,30 --max-cases-per-scale 100 --seeds 3 --output-xlsx results/formal_j10_j20_j30_100cases_3seeds_scale_specific.xlsx
+```
 
-## 默认训练参数
+只运行 RQL：
 
-当前 `main.py` 中默认参数为：
+```powershell
+E:\conda\python.exe experiment_suite.py --cases-dir cases --scales 10,20,30 --max-cases-per-scale 50 --seeds 3 --rql-only --output-xlsx results/rql_only.xlsx
+```
 
-- `max_rollouts = 1000`
-- `alpha = 0.1`
-- `gamma = 0.95`
-- `epsilon = 0.2`
-- `convergence_threshold = 1e-3`
-- `global_reward_scale = 0.3`
-- `local_reward_scale = 0.2`
+只运行 RH：
 
----
+```powershell
+E:\conda\python.exe experiment_suite.py --cases-dir cases --scales 10,20,30 --max-cases-per-scale 0 --seeds 1 --methods RH --output-xlsx results/rh_allcases_seed1.xlsx
+```
 
-## 当前版本仍然存在的限制
+说明：`--max-cases-per-scale 0` 表示不限制案例数量。
 
-虽然这次修复了主要实现错误，但当前方法仍有一些局限：
+## Excel 输出
 
-- 状态表示仍然比较粗
-- 目前只使用 `(NLF, SBI, MUR)` 三维离散状态
-- 很多关键调度信息没有直接进入状态，例如：
-  - 当前运行任务组合
-  - 人员占用模式
-  - 更细粒度的关键路径压力
+`experiment_suite.py` 会生成一个多 Sheet `.xlsx` 文件，主要包括：
 
-所以“已经能收敛”并不等于“已经最优”。
+| Sheet | 内容 |
+|---|---|
+| `metadata` | 实验时间、参数、规模、方法、状态特征说明 |
+| `case_check` | 案例规模校验、任务数、人员数、里程碑数 |
+| `raw_runs` | 每次运行的原始结果 |
+| `instance_summary` | 每个案例和方法的实例级汇总 |
+| `scale_summary` | 论文主表使用的规模级汇总 |
+| `method_rank` | 各规模下按 AOTV 和 ARPD 排名 |
+| `convergence` | QL/RQL 的训练历史 |
+| `failures` | 异常记录，单个失败不会中断整批实验 |
 
-如果接下来要继续提升结果质量，更优先的方向应是增强状态表示，而不是继续单纯调 `alpha`、`gamma` 或 `epsilon`。
+## 指标口径
 
----
+| 指标 | 含义 |
+|---|---|
+| `penalty` | 总延迟惩罚，越小越好 |
+| `AOTV` | 同一规模下，各案例平均 penalty |
+| `Best` | 每个案例各 seed 的最小 penalty，再对案例取平均 |
+| `Std` | 实例级平均 penalty 的标准差 |
+| `ARPD` | 相对同案例最优结果的平均百分比偏差 |
+| `Time` | 默认使用 `total_time = train_time + solve_time` |
 
-## 后续优化建议
+ARPD 定义：
 
-可以优先考虑以下方向：
+```text
+ARPD = mean((F_A(I) - F*(I)) / max(F*(I), 1)) * 100%
+```
 
-- 扩充状态特征，加入资源占用模式
-- 加入当前关键运行任务信息
-- 细化中断代价设计
-- 增强 Q 学习与 `cost_to_go` 的协同
-- 增加不同测试集上的对比实验
-- 输出训练过程中的惩罚曲线和 Q 表变化曲线
+其中 `F*(I)` 是同一案例上所有算法得到的最小 penalty。
+
+当前统计规则中，`raw_runs` 保留 RQL 每个 seed 的原始输出；在 `instance_summary` 和 `scale_summary` 中，RQL 的案例级 penalty 使用该案例多个 seed 中的最优值，以体现内部多次随机训练后的最好调度结果。
+
+## RQL 参数调优
+
+正交实验入口为 `orthogonal_experiment.py`，用于 RQL 参数调优。
+
+示例命令：
+
+```powershell
+E:\conda\python.exe orthogonal_experiment.py --cases-dir cases --scales 10,20,30 --max-cases-per-scale 10 --seeds 1 --output-xlsx results/orthogonal_results.xlsx
+```
+
+当前正交实验设计采用分层思路：
+
+- 第一层：训练参数 `alpha, gamma, epsilon, epsilon_decay`。
+- 第二层：奖励结构和构解参数 `global_reward_scale, local_reward_scale, lookahead_reward_weight, beam_width`。
+- 第三层：`max_rollouts / EP` 敏感性分析。
+
+## RQL 收敛性实验
+
+收敛性实验入口为 `rql_convergence_experiment.py`，用于比较 RQL 收敛改进策略，例如 scale-specific EP、低后期探索率、checkpoint、奖励归一化和 warmup。
+
+示例命令：
+
+```powershell
+E:\conda\python.exe rql_convergence_experiment.py --cases-dir cases --scales 10,20,30 --max-cases-per-scale 5 --seeds 1 --output-xlsx results/rql_convergence_experiment.xlsx
+```
+
+## cost-to-go 耗时诊断
+
+`cost_to_go.py` 内置了轻量诊断字段：
+
+- `ctg_calls`
+- `ctg_call_time`
+- `avg_ctg_time`
+- `ctg_simulation_calls`
+- `ctg_simulation_time`
+- `avg_ctg_simulation_time`
+
+独立测试入口为 `ctg_profile.py`，不会运行正式对比实验。
+
+小规模诊断：
+
+```powershell
+E:\conda\python.exe ctg_profile.py --scales 10 --max-cases-per-scale 1 --seeds 1 --max-rollouts 2
+```
+
+全规模轻量诊断：
+
+```powershell
+E:\conda\python.exe ctg_profile.py --scales 10,20,30,60,90,120 --max-cases-per-scale 3 --seeds 1 --max-rollouts 3 --output-csv results/ctg_profile_all_scales_3cases_3rollouts.csv
+```
+
+该诊断用于确认 RQL 的主要耗时来自 cost-to-go rollout 前瞻仿真。测试结果显示，J60 及以上规模中 CTG 耗时占总训练耗时的 90% 以上。
+
+## 主要文件
+
+| 文件 | 作用 |
+|---|---|
+| `main.py` | 单案例快速入口 |
+| `experiment_suite.py` | 正式多规模对比实验入口 |
+| `orthogonal_experiment.py` | RQL 参数正交实验 |
+| `rql_convergence_experiment.py` | RQL 收敛性实验 |
+| `ctg_profile.py` | cost-to-go 耗时诊断 |
+| `baselines.py` | 启发式、RH baseline 构解逻辑 |
+| `training.py` | QL/RQL 训练和最终构解 |
+| `cost_to_go.py` | rollout cost-to-go 仿真、缓存和诊断 |
+| `metrics.py` | raw、instance、scale、rank 指标汇总 |
+| `excel_writer.py` | 标准库 Excel 输出 |
+| `parser.py` | `.mm` 案例解析 |
+| `environment.py` | 环境初始化和状态特征计算 |
+| `actions.py` | 动作生成、冲突判断和自动中断 |
+| `reward.py` | 动作执行和惩罚/奖励计算 |
+| `qlearning.py` | Q 表初始化和 Q-learning 更新 |
+| `parameters.py` | 默认训练参数和构解参数 |
+| `state_space.py` | 6 维状态空间与动作类型定义 |
+
+## 当前正式参数
+
+默认训练参数位于 `parameters.py`：
+
+| 参数 | 当前值 | 含义 |
+|---|---:|---|
+| `max_rollouts` | 500 | 默认最大训练 episode 数 |
+| `alpha` | 0.2 | Q-learning 学习率 |
+| `gamma` | 0.99 | 折扣因子 |
+| `epsilon` | 0.2 | 初始探索率 |
+| `epsilon_decay` | 0.99 | 探索率衰减系数 |
+| `epsilon_min` | 0.02 | 最小探索率 |
+| `global_reward_scale` | 0.1 | 全局奖励权重 |
+| `local_reward_scale` | 0.4 | 局部奖励权重 |
+| `lookahead_reward_weight` | 1.5 | 前瞻奖励权重 |
+
+默认最终构解参数：
+
+| 参数 | 当前值 | 含义 |
+|---|---:|---|
+| `q_distinction_threshold` | `1e-9` | Q 值区分阈值 |
+| `beam_width` | 5 | beam search 保留动作集数量 |
+| `beam_branch_limit` | 8 | 每个 beam 节点最大扩展动作数 |
+| `beam_improvement_margin` | 0.1 | beam 结果相对贪心结果的最小改进幅度 |
+
+## 结果文件和版本管理
+
+实验输出默认写入 `results/`。`.gitignore` 已排除：
+
+- `results/`
+- `*.xlsx`
+- `*.csv`
+- `__pycache__/`
+
+因此正式实验结果不会被默认提交到 GitHub。若需要保存关键结果，应单独整理为论文表格或报告文档。
+
+## 论文写作建议
+
+论文主实验建议使用 J10/J20/J30/J60，J90/J120 可作为补充说明。时间指标建议报告 `total_time`，同时在正文中说明：
+
+```text
+RQL 的主要额外成本来自训练阶段的 cost-to-go 前瞻仿真；
+online solve_time 较小，但不能单独作为算法总时间。
+```
+
+当前方法适合定位为解质量优先的动态调度算法，而不是低耗时快速启发式算法。

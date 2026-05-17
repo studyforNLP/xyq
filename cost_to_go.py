@@ -1,4 +1,5 @@
 import copy
+import time
 from typing import List, Sequence, Tuple
 
 from actions import add_required_interrupts, generate_available_actions, is_action_conflict
@@ -11,22 +12,43 @@ MAX_SIMULATION_STEPS = 10000
 _COST_TO_GO_CACHE: dict[Tuple, float] = {}
 _CACHE_HITS = 0
 _CACHE_MISSES = 0
+_CTG_CALLS = 0
+_CTG_CALL_TIME = 0.0
+_CTG_SIMULATION_CALLS = 0
+_CTG_SIMULATION_TIME = 0.0
 
 
 def clear_cost_to_go_cache() -> None:
-    """Clear cached cost-to-go simulations."""
+    """Clear cached cost-to-go simulations and reset diagnostics."""
     global _CACHE_HITS, _CACHE_MISSES
+    global _CTG_CALLS, _CTG_CALL_TIME, _CTG_SIMULATION_CALLS, _CTG_SIMULATION_TIME
     _COST_TO_GO_CACHE.clear()
     _CACHE_HITS = 0
     _CACHE_MISSES = 0
+    _CTG_CALLS = 0
+    _CTG_CALL_TIME = 0.0
+    _CTG_SIMULATION_CALLS = 0
+    _CTG_SIMULATION_TIME = 0.0
 
 
-def get_cost_to_go_cache_info() -> dict[str, int]:
-    """Return lightweight cache diagnostics."""
+def get_cost_to_go_cache_info() -> dict[str, int | float]:
+    """Return lightweight cache and runtime diagnostics."""
+    avg_ctg_time = _CTG_CALL_TIME / _CTG_CALLS if _CTG_CALLS else 0.0
+    avg_simulation_time = (
+        _CTG_SIMULATION_TIME / _CTG_SIMULATION_CALLS
+        if _CTG_SIMULATION_CALLS
+        else 0.0
+    )
     return {
         "size": len(_COST_TO_GO_CACHE),
         "hits": _CACHE_HITS,
         "misses": _CACHE_MISSES,
+        "ctg_calls": _CTG_CALLS,
+        "ctg_call_time": _CTG_CALL_TIME,
+        "avg_ctg_time": avg_ctg_time,
+        "ctg_simulation_calls": _CTG_SIMULATION_CALLS,
+        "ctg_simulation_time": _CTG_SIMULATION_TIME,
+        "avg_ctg_simulation_time": avg_simulation_time,
     }
 
 
@@ -212,38 +234,49 @@ def calculate_action_set_cost_to_go(
     use_cache: bool = True,
 ) -> float:
     """Simulate a fixed current action set, then finish by heuristic rollout."""
-    global _CACHE_HITS, _CACHE_MISSES
-    cache_key = _cost_to_go_cache_key(actions, parsed, env)
-    if use_cache and cache_key in _COST_TO_GO_CACHE:
-        _CACHE_HITS += 1
-        return _COST_TO_GO_CACHE[cache_key]
-    if use_cache:
-        _CACHE_MISSES += 1
+    global _CACHE_HITS, _CACHE_MISSES, _CTG_CALLS, _CTG_CALL_TIME
+    global _CTG_SIMULATION_CALLS, _CTG_SIMULATION_TIME
+    call_started = time.perf_counter()
+    _CTG_CALLS += 1
+    try:
+        cache_key = _cost_to_go_cache_key(actions, parsed, env)
+        if use_cache and cache_key in _COST_TO_GO_CACHE:
+            _CACHE_HITS += 1
+            return _COST_TO_GO_CACHE[cache_key]
+        if use_cache:
+            _CACHE_MISSES += 1
 
-    sim_env = copy.deepcopy(env)
-    _process_zero_duration_actions(sim_env, parsed)
-    _execute_action_set(actions, sim_env, parsed)
-    _advance_one_decision_time(sim_env, parsed)
+        simulation_started = time.perf_counter()
+        _CTG_SIMULATION_CALLS += 1
+        try:
+            sim_env = copy.deepcopy(env)
+            _process_zero_duration_actions(sim_env, parsed)
+            _execute_action_set(actions, sim_env, parsed)
+            _advance_one_decision_time(sim_env, parsed)
 
-    result = 10000.0
-    for _ in range(MAX_SIMULATION_STEPS):
-        _process_zero_duration_actions(sim_env, parsed)
-        if len(sim_env.completed_tasks) == parsed.task_count:
-            result = calculate_global_reward_for_cost_to_go(sim_env, parsed)
-            break
-
-        heuristic_actions = build_heuristic_action_set(sim_env, parsed)
-        if heuristic_actions:
-            _execute_action_set(heuristic_actions, sim_env, parsed)
-        elif not sim_env.running_tasks:
             result = 10000.0
-            break
+            for _ in range(MAX_SIMULATION_STEPS):
+                _process_zero_duration_actions(sim_env, parsed)
+                if len(sim_env.completed_tasks) == parsed.task_count:
+                    result = calculate_global_reward_for_cost_to_go(sim_env, parsed)
+                    break
 
-        _advance_one_decision_time(sim_env, parsed)
+                heuristic_actions = build_heuristic_action_set(sim_env, parsed)
+                if heuristic_actions:
+                    _execute_action_set(heuristic_actions, sim_env, parsed)
+                elif not sim_env.running_tasks:
+                    result = 10000.0
+                    break
 
-    if use_cache:
-        _COST_TO_GO_CACHE[cache_key] = result
-    return result
+                _advance_one_decision_time(sim_env, parsed)
+        finally:
+            _CTG_SIMULATION_TIME += time.perf_counter() - simulation_started
+
+        if use_cache:
+            _COST_TO_GO_CACHE[cache_key] = result
+        return result
+    finally:
+        _CTG_CALL_TIME += time.perf_counter() - call_started
 
 
 def calculate_baseline_cost_to_go(parsed: ParsedData, env: EnvironmentState) -> float:

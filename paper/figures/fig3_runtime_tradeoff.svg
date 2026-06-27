@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<style>text{font-family:Arial,DejaVu Sans,Liberation Sans,sans-serif;} .small{font-size:13px;} .axis{stroke:#272727;stroke-width:1;} .grid{stroke:#E6E6E6;stroke-width:1;} .label{font-size:15px;fill:#272727;} .panel{font-size:19px;font-weight:bold;fill:#272727;} .title{font-size:20px;font-weight:bold;fill:#272727;}</style>
+<text x="55.00" y="50.00" font-size="23" fill="#272727" font-weight="bold" text-anchor="start">Fig. 3 | Solution quality comes with a clear training-time cost</text>
+<text x="55.00" y="95.00" font-size="20" fill="#272727" font-weight="bold" text-anchor="start">a</text>
+<line x1="100.00" y1="435.00" x2="570.00" y2="435.00" stroke="#272727" stroke-width="1.1"/>
+<line x1="100.00" y1="125.00" x2="100.00" y2="435.00" stroke="#272727" stroke-width="1.1"/>
+<line x1="100.00" y1="434.24" x2="570.00" y2="434.24" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="438.24" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">0.001</text>
+<line x1="100.00" y1="384.17" x2="570.00" y2="384.17" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="388.17" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">0.01</text>
+<line x1="100.00" y1="334.10" x2="570.00" y2="334.10" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="338.10" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">0.1</text>
+<line x1="100.00" y1="284.03" x2="570.00" y2="284.03" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="288.03" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">1</text>
+<line x1="100.00" y1="233.96" x2="570.00" y2="233.96" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="237.96" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">10</text>
+<line x1="100.00" y1="183.89" x2="570.00" y2="183.89" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="187.89" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">100</text>
+<line x1="100.00" y1="133.82" x2="570.00" y2="133.82" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="92.00" y="137.82" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">1000</text>
+<rect x="116.45" y="243.06" width="14.89" height="191.94" rx="0" fill="#0F4D92" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="133.37" y="338.18" width="14.89" height="96.82" rx="0" fill="#42949E" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="150.29" y="427.24" width="14.89" height="7.76" rx="0" fill="#8BCF8B" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="167.21" y="426.84" width="14.89" height="8.16" rx="0" fill="#767676" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="184.13" y="240.11" width="14.89" height="194.89" rx="0" fill="#B64342" stroke="none" stroke-width="1" opacity="1"/>
+<text x="158.75" y="457.00" font-size="12" fill="#272727" font-weight="normal" text-anchor="middle">J10</text>
+<rect x="233.95" y="203.18" width="14.89" height="231.82" rx="0" fill="#0F4D92" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="250.87" y="304.09" width="14.89" height="130.91" rx="0" fill="#42949E" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="267.79" y="410.77" width="14.89" height="24.23" rx="0" fill="#8BCF8B" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="284.71" y="410.30" width="14.89" height="24.70" rx="0" fill="#767676" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="301.63" y="222.17" width="14.89" height="212.83" rx="0" fill="#B64342" stroke="none" stroke-width="1" opacity="1"/>
+<text x="276.25" y="457.00" font-size="12" fill="#272727" font-weight="normal" text-anchor="middle">J20</text>
+<rect x="351.45" y="171.25" width="14.89" height="263.75" rx="0" fill="#0F4D92" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="368.37" y="282.79" width="14.89" height="152.21" rx="0" fill="#42949E" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="385.29" y="402.06" width="14.89" height="32.94" rx="0" fill="#8BCF8B" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="402.21" y="402.03" width="14.89" height="32.97" rx="0" fill="#767676" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="419.13" y="211.75" width="14.89" height="223.25" rx="0" fill="#B64342" stroke="none" stroke-width="1" opacity="1"/>
+<text x="393.75" y="457.00" font-size="12" fill="#272727" font-weight="normal" text-anchor="middle">J30</text>
+<rect x="468.95" y="140.84" width="14.89" height="294.16" rx="0" fill="#0F4D92" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="485.87" y="226.89" width="14.89" height="208.11" rx="0" fill="#42949E" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="502.79" y="373.44" width="14.89" height="61.56" rx="0" fill="#8BCF8B" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="519.71" y="374.78" width="14.89" height="60.22" rx="0" fill="#767676" stroke="none" stroke-width="1" opacity="1"/>
+<rect x="536.63" y="195.48" width="14.89" height="239.52" rx="0" fill="#B64342" stroke="none" stroke-width="1" opacity="1"/>
+<text x="511.25" y="457.00" font-size="12" fill="#272727" font-weight="normal" text-anchor="middle">J60</text>
+<text x="45.00" y="280.00" font-size="13" fill="#272727" font-weight="normal" text-anchor="middle" transform="rotate(-90 45.00 280.00)">Total time (s, log scale)</text>
+<text x="100.00" y="470.00" font-size="13" fill="#4D4D4D" font-weight="normal" text-anchor="start">The log axis keeps heuristic and learning methods visible in one panel.</text>
+<text x="665.00" y="95.00" font-size="20" fill="#272727" font-weight="bold" text-anchor="start">b</text>
+<text x="705.00" y="95.00" font-size="16" fill="#272727" font-weight="bold" text-anchor="start">Quality-time frontier</text>
+<line x1="705.00" y1="435.00" x2="1085.00" y2="435.00" stroke="#272727" stroke-width="1.1"/>
+<line x1="705.00" y1="125.00" x2="705.00" y2="435.00" stroke="#272727" stroke-width="1.1"/>
+<line x1="705.97" y1="435.00" x2="705.97" y2="440.00" stroke="#272727" stroke-width="0.8"/>
+<text x="705.97" y="456.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="middle">0.001</text>
+<line x1="769.42" y1="435.00" x2="769.42" y2="440.00" stroke="#272727" stroke-width="0.8"/>
+<text x="769.42" y="456.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="middle">0.01</text>
+<line x1="832.87" y1="435.00" x2="832.87" y2="440.00" stroke="#272727" stroke-width="0.8"/>
+<text x="832.87" y="456.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="middle">0.1</text>
+<line x1="896.32" y1="435.00" x2="896.32" y2="440.00" stroke="#272727" stroke-width="0.8"/>
+<text x="896.32" y="456.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="middle">1</text>
+<line x1="959.77" y1="435.00" x2="959.77" y2="440.00" stroke="#272727" stroke-width="0.8"/>
+<text x="959.77" y="456.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="middle">10</text>
+<line x1="1023.22" y1="435.00" x2="1023.22" y2="440.00" stroke="#272727" stroke-width="0.8"/>
+<text x="1023.22" y="456.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="middle">100</text>
+<line x1="705.00" y1="435.00" x2="1085.00" y2="435.00" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="697.00" y="439.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">0</text>
+<line x1="705.00" y1="357.50" x2="1085.00" y2="357.50" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="697.00" y="361.50" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">15</text>
+<line x1="705.00" y1="280.00" x2="1085.00" y2="280.00" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="697.00" y="284.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">30</text>
+<line x1="705.00" y1="202.50" x2="1085.00" y2="202.50" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="697.00" y="206.50" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">45</text>
+<line x1="705.00" y1="125.00" x2="1085.00" y2="125.00" stroke="#E8E8E8" stroke-width="0.8"/>
+<text x="697.00" y="129.00" font-size="11" fill="#272727" font-weight="normal" text-anchor="end">60</text>
+<circle cx="948.23" cy="428.30" r="5.50" fill="#0F4D92" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="827.69" cy="427.50" r="3.80" fill="#42949E" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="714.83" cy="423.24" r="3.80" fill="#8BCF8B" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="715.34" cy="423.66" r="3.80" fill="#767676" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="951.97" cy="424.74" r="3.80" fill="#B64342" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="998.77" cy="423.28" r="5.50" fill="#0F4D92" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="870.89" cy="420.98" r="3.80" fill="#42949E" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="735.70" cy="417.84" r="3.80" fill="#8BCF8B" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="736.29" cy="415.26" r="3.80" fill="#767676" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="974.70" cy="408.52" r="3.80" fill="#B64342" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="1039.23" cy="422.27" r="5.50" fill="#0F4D92" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="897.88" cy="421.22" r="3.80" fill="#42949E" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="746.74" cy="416.53" r="3.80" fill="#8BCF8B" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="746.78" cy="415.26" r="3.80" fill="#767676" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="987.91" cy="366.89" r="3.80" fill="#B64342" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="1077.77" cy="387.32" r="5.50" fill="#0F4D92" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="968.72" cy="381.68" r="3.80" fill="#42949E" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="783.01" cy="374.32" r="3.80" fill="#8BCF8B" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="781.31" cy="357.64" r="3.80" fill="#767676" stroke="#FFFFFF" stroke-width="0.8"/>
+<circle cx="1008.53" cy="147.96" r="3.80" fill="#B64342" stroke="#FFFFFF" stroke-width="0.8"/>
+<text x="895.00" y="480.00" font-size="13" fill="#272727" font-weight="normal" text-anchor="middle">Total time (s, log scale)</text>
+<text x="650.00" y="280.00" font-size="13" fill="#272727" font-weight="normal" text-anchor="middle" transform="rotate(-90 650.00 280.00)">AOTV</text>
+<text x="705.00" y="495.00" font-size="13" fill="#4D4D4D" font-weight="normal" text-anchor="start">RQL occupies the low-penalty but high-cost region, consistent with rollout-assisted training.</text>
+</svg>

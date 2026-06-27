@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="600" viewBox="0 0 980 600">
+<rect width="100%" height="100%" fill="white"/>
+<text x="490.0" y="30" text-anchor="middle" font-size="22" font-family="Arial">RQL penalty convergence curve</text>
+<line x1="90" y1="520" x2="770" y2="520" stroke="#333"/>
+<line x1="90" y1="55" x2="90" y2="520" stroke="#333"/>
+<line x1="90.0" y1="520" x2="90.0" y2="526" stroke="#333"/>
+<text x="90.0" y="546" text-anchor="middle" font-size="13" font-family="Arial">100</text>
+<line x1="226.0" y1="520" x2="226.0" y2="526" stroke="#333"/>
+<text x="226.0" y="546" text-anchor="middle" font-size="13" font-family="Arial">880</text>
+<line x1="362.0" y1="520" x2="362.0" y2="526" stroke="#333"/>
+<text x="362.0" y="546" text-anchor="middle" font-size="13" font-family="Arial">1660</text>
+<line x1="498.0" y1="520" x2="498.0" y2="526" stroke="#333"/>
+<text x="498.0" y="546" text-anchor="middle" font-size="13" font-family="Arial">2440</text>
+<line x1="634.0" y1="520" x2="634.0" y2="526" stroke="#333"/>
+<text x="634.0" y="546" text-anchor="middle" font-size="13" font-family="Arial">3220</text>
+<line x1="770.0" y1="520" x2="770.0" y2="526" stroke="#333"/>
+<text x="770.0" y="546" text-anchor="middle" font-size="13" font-family="Arial">4000</text>
+<line x1="84" y1="520.0" x2="90" y2="520.0" stroke="#333"/>
+<line x1="90" y1="520.0" x2="770" y2="520.0" stroke="#e6e6e6"/>
+<text x="78" y="524.0" text-anchor="end" font-size="12" font-family="Arial">-1.08</text>
+<line x1="84" y1="426.99999999999994" x2="90" y2="426.99999999999994" stroke="#333"/>
+<line x1="90" y1="426.99999999999994" x2="770" y2="426.99999999999994" stroke="#e6e6e6"/>
+<text x="78" y="430.99999999999994" text-anchor="end" font-size="12" font-family="Arial">2.91</text>
+<line x1="84" y1="334.0" x2="90" y2="334.0" stroke="#333"/>
+<line x1="90" y1="334.0" x2="770" y2="334.0" stroke="#e6e6e6"/>
+<text x="78" y="338.0" text-anchor="end" font-size="12" font-family="Arial">6.90</text>
+<line x1="84" y1="240.99999999999997" x2="90" y2="240.99999999999997" stroke="#333"/>
+<line x1="90" y1="240.99999999999997" x2="770" y2="240.99999999999997" stroke="#e6e6e6"/>
+<text x="78" y="244.99999999999997" text-anchor="end" font-size="12" font-family="Arial">10.90</text>
+<line x1="84" y1="148.0" x2="90" y2="148.0" stroke="#333"/>
+<line x1="90" y1="148.0" x2="770" y2="148.0" stroke="#e6e6e6"/>
+<text x="78" y="152.0" text-anchor="end" font-size="12" font-family="Arial">14.89</text>
+<line x1="84" y1="55.0" x2="90" y2="55.0" stroke="#333"/>
+<line x1="90" y1="55.0" x2="770" y2="55.0" stroke="#e6e6e6"/>
+<text x="78" y="59.0" text-anchor="end" font-size="12" font-family="Arial">18.88</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="2.5" points="90.00,487.93 107.44,487.93 124.87,487.93"/>
+<line x1="805" y1="80" x2="833" y2="80" stroke="#1f77b4" stroke-width="3"/>
+<text x="841" y="85" font-size="14" font-family="Arial">J10</text>
+<polyline fill="none" stroke="#d62728" stroke-width="2.5" points="90.00,459.96 107.44,459.96 124.87,459.96 142.31,459.96 159.74,459.96 177.18,459.96 194.62,459.96 212.05,459.96 229.49,459.96 246.92,459.96 264.36,459.96 281.79,459.96 299.23,459.96 316.67,459.96 334.10,459.96 351.54,459.96 368.97,459.96 386.41,459.96 403.85,459.96"/>
+<line x1="805" y1="104" x2="833" y2="104" stroke="#d62728" stroke-width="3"/>
+<text x="841" y="109" font-size="14" font-family="Arial">J20</text>
+<polyline fill="none" stroke="#2ca02c" stroke-width="2.5" points="90.00,87.07 107.44,313.14 124.87,315.47 142.31,315.47 159.74,315.47 177.18,315.47 194.62,315.47 212.05,315.47 229.49,315.47 246.92,315.47 264.36,315.47 281.79,315.47 299.23,366.74 316.67,366.74 334.10,366.74 351.54,366.74 368.97,366.74 386.41,366.74 403.85,366.74 421.28,366.74 438.72,366.74 456.15,399.37 473.59,399.37 491.03,399.37"/>
+<line x1="805" y1="128" x2="833" y2="128" stroke="#2ca02c" stroke-width="3"/>
+<text x="841" y="133" font-size="14" font-family="Arial">J30</text>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="2.5" points="90.00,257.20 107.44,257.20 124.87,257.20 142.31,257.20 159.74,257.20 177.18,257.20 194.62,257.20 212.05,257.20 229.49,257.20 246.92,257.20 264.36,257.20 281.79,257.20 299.23,257.20 316.67,257.20 334.10,257.20 351.54,257.20 368.97,257.20 386.41,257.20 403.85,257.20 421.28,257.20 438.72,257.20 456.15,257.20 473.59,257.20 491.03,257.20 508.46,257.20 525.90,257.20 543.33,257.20 560.77,257.20 578.21,257.20 595.64,257.20 613.08,257.20 630.51,257.20 647.95,257.20 665.38,257.20 682.82,257.20 700.26,257.20 717.69,257.20 735.13,257.20 752.56,257.20 770.00,257.20"/>
+<line x1="805" y1="152" x2="833" y2="152" stroke="#ff7f0e" stroke-width="3"/>
+<text x="841" y="157" font-size="14" font-family="Arial">J60</text>
+<text x="430.0" y="575" text-anchor="middle" font-size="15" font-family="Arial">Training steps</text>
+<text x="22" y="287.5" text-anchor="middle" font-size="15" font-family="Arial" transform="rotate(-90 22 287.5)">Average best-so-far penalty</text>
+</svg>
